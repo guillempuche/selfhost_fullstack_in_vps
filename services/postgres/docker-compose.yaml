@@ -1,0 +1,33 @@
+# Inspired from:
+# - https://github.com/powersync-ja/self-host-demo/blob/main/services/postgres.yaml
+# - https://github.com/ChristianLempa/boilerplates/tree/main/docker-compose
+
+name: myapp_postgres
+
+services:
+  db_postgres:
+    image: postgres:16.5-alpine3.20
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - PGPORT=${POSTGRES_PORT}
+    ports:
+      - ${POSTGRES_PORT}:${POSTGRES_PORT}
+    command: ["postgres", "-c", "wal_level=logical"]
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      start_period: 30s
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pg_data:
+
+networks:
+  default:
+    name: backend_network

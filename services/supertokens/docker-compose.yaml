@@ -1,0 +1,55 @@
+# Documentation at https://github.com/supertokens/supertokens-docker-postgresql
+
+name: myapp_supertokens
+
+services:
+  db:
+    image: postgres:16.5-alpine3.20
+    container_name: supertokens_db
+    environment:
+      POSTGRES_USER: supertokens_user 
+      POSTGRES_PASSWORD: somePassword 
+      POSTGRES_DB: supertokens
+    ports:
+      - ${POSTGRES_PORT}:${POSTGRES_PORT}
+    networks:
+      - supertokens
+    restart: always
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'supertokens_user', '-d', 'supertokens']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  auth:
+    image: registry.supertokens.io/supertokens/supertokens-postgresql
+    container_name: supertokens_auth
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      POSTGRESQL_CONNECTION_URI: postgresql://supertokens_user:somePassword@db:5432/supertokens
+      SUPERTOKENS_PORT: 3567 # Used in Supertokens configuration of the server
+      ACCESS_TOKEN_VALIDITY: 3600 # 1 hour
+      REFRESH_TOKEN_VALIDITY: 604800 # 7 days
+      API_KEYS: ${AUTH_API_KEY} # Used in Supertokens configuration of the server. Docker logs warns if the key format is incorrect
+    ports:
+      - 3567:3567
+    networks:
+      - supertokens
+    restart: unless-stopped
+    healthcheck:
+      test: >
+        bash -c 'exec 3<>/dev/tcp/127.0.0.1/3567 && echo -e "GET /hello HTTP/1.1\r\nhost: 127.0.0.1:3567\r\nConnection: close\r\n\r\n" >&3 && cat <&3 | grep "Hello"'
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  supertokens:
+    driver: bridge
+
+volumes:
+  postgres-data:

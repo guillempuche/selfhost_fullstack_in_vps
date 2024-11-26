@@ -1,0 +1,22 @@
+name: myapp_traefik
+
+services:
+  traefik:
+    image: docker.io/library/traefik:v3.2.0
+    container_name: traefik
+    environment:
+      - CF_DNS_API_TOKEN=${CLOUFLARE_DNS_API_TOKEN}
+    ports:
+      - 80:80
+      - 443:443
+      # --> (Optional) Enable Dashboard, don't do in production
+      # - 8080:8080
+      # <--
+    networks:
+      - internal
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro # readonly permission
+      - ./config/traefik.yaml:/etc/traefik/traefik.yaml:ro
+      - ./data/certs/:/var/traefik/certs/:ro
+      # - ./config/conf.d/:/etc/traefik/conf.d/:ro

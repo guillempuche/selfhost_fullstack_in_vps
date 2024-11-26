@@ -1,0 +1,140 @@
+# Inspired from https://github.com/powersync-ja/self-host-demo/blob/main/services/powersync.yaml
+
+name: myapp_powersync
+
+services:
+  # MongoDB service used internally
+  mongo:
+    image: mongo:7.0
+    container_name: myapp_mongo
+    command: --replSet rs0 --bind_ip_all --quiet
+    restart: unless-stopped
+    ports:
+      - 27017:27017
+    volumes:
+      - mongo_storage:/data/db
+    networks:
+      - backend_network
+
+  # Initializes the MongoDB replica set. This service will not usually be actively running
+  mongo-rs-init:
+    image: mongo:7.0
+    container_name: myapp_mongo_rs_init
+    depends_on:
+      - mongo
+    restart: on-failure
+    entrypoint:
+      - bash
+      - -c
+      - 'mongosh --host mongo:27017 --eval ''try{rs.status().ok && quit(0)} catch {} rs.initiate({_id: "rs0", version: 1, members: [{ _id: 0, host : "mongo:27017" }]})'''
+    networks:
+      - backend_network
+
+  powersync:
+    image: journeyapps/powersync-service:latest
+
+    # The unified service runs an API server and replication worker in the same container.
+    # These services can be executed in different containers by using individual entry commands e.g.
+    # Start only the API server with
+    #   command: ['start', '-r', 'api']
+    # Start only the replication worker with
+    #   command: ['start', '-r', 'sync']
+
+    # Migations occur automatically by default. Default migrations can be disabled in `config.yaml`.
+
+    # Service migrations can be manually triggered by starting a container with the
+    # following command:
+    #     command: ['migrate', 'up']
+    # Note that this container must finish executing before starting the sync or unified container.
+    command: ["start", "-r", "unified"]
+
+    depends_on:
+      mongo-rs-init:
+        condition: service_completed_successfully
+
+    environment:
+      # The path (inside the container) to the YAML config file
+      # Alternatively the config path can be specified in the command
+      # e.g:
+      #   command: ['start', '-r', 'unified', '-c', '/config/powersync.yaml']
+      #
+      # The config file can also be specified in Base 64 encoding
+      # e.g.: Via an environment variable
+      #   POWERSYNC_CONFIG_B64: [base64 encoded content]
+      # or e.g.: Via a command line parameter
+      #    command: ['start', '-r', 'unified', '-c64', '[base64 encoded content]']
+      POWERSYNC_CONFIG_PATH: /config/config.yaml
+
+      # Service memory limits should be adjusted to roughly 80 percent of the system memory capacity
+      NODE_OPTIONS: --max-old-space-size=1000
+
+      # Sync rules can be specified as base 64 encoded YAML
+      # e.g: Via an environment variable
+      # POWERSYNC_SYNC_RULES_B64: "[base64 encoded sync rules]"
+      # or e.g.: Via a command line parameter
+      #     command: ['start', '-r', 'unified', '-sync64', '[base64 encoded content]']
+
+      PS_MONGO_URI: mongodb://mongo:27017/powersync_demo
+
+      # Used in config.yaml
+      PS_DATABASE: ${POSTGRES_DB}
+      PS_HOST: ${POSTGRES_HOST}
+      PS_PASSWORD: ${POSTGRES_PASSWORD}
+      PS_POSTGRES_PORT: ${POSTGRES_PORT}
+      PS_USER: ${POSTGRES_USER}
+
+      # The port which the PowerSync API server should run on
+      PS_PORT: ${PS_PORT}
+
+      # (Optional) Check config.yaml for more details
+      # PS_DATA_SOURCE_URI: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+
+      # For local URLs to work, enable this if config.yaml->client_auth->configure_jwks
+      # PS_JWKS_URL: ${POSTGRES_JWKS_URL}
+
+      # CA certificate for Postgres connection
+      # PS_PG_CA_CERT:
+
+      # Client certificate for Postgres connection
+      # PS_PG_CLIENT_CERT:
+
+      # Client private key for Postgres connection
+      # PS_PG_CLIENT_PRIVATE_KEY:
+
+      # Potential JWKs public key template
+      # PS_JWK_N:
+      # PS_JWK_E:
+      # PS_JWK_KID:
+    networks:
+      - backend_network
+    ports:
+      - ${PS_PORT}:${PS_PORT}
+    restart: unless-stopped
+    volumes:
+      - ./config.yaml:/config/config.yaml
+      - ./sync_rules.yaml:/config/sync_rules.yaml
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    healthcheck:
+      test: 'curl -X POST http://localhost:${PS_PORT}/api/admin/v1/diagnostics -H "Authorization: Bearer ${API_TOKEN}" -H "Content-Type: application/json" -H "Accept: application/json" -d "{}" | grep "\"errors\":\[{" && exit 1 || exit 0'
+      interval: 5s
+      timeout: 1s
+      retries: 15
+
+  # Automatically update the Powersync container image
+  watchtower:
+    image: containrrr/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 86400 --cleanup
+    restart: unless-stopped
+    environment:
+      - WATCHTOWER_LABEL_ENABLE=true
+
+volumes:
+  mongo_storage:
+  pg_data:
+
+networks:
+  backend_network:
+    external: true

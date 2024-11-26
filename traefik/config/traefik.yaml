@@ -1,0 +1,59 @@
+global:
+  # checkNewVersion: false
+  sendAnonymousUsage: false
+
+# (Optional) Change log level and format here ...
+#     - level: [TRACE, DEBUG, INFO, WARN, ERROR, FATAL]
+# log:
+#   level: DEBUG
+
+# --> (Optional) Enable accesslog here ...
+# accesslog: {}
+# <--
+
+# --> (Optional) Enable API and Dashboard here, don't do in production
+# api:
+#   dashboard: true
+#   insecure: true
+# <--
+
+entryPoints:
+  web:
+    address: :80
+    http: # Redirect all HTTP to HTTPS
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+  websecure:
+    address: :443
+
+# Cloudflare Origin CA certificate for mTLS https://doc.traefik.io/traefik/https/tls/#client-authentication-mtls, https://developers.cloudflare.com/ssl/origin-configuration/authenticated-origin-pull/
+tls:
+  options:
+    default:
+      # minVersion: VersionTLS12
+      # sniStrict: true
+      clientAuth:
+        caFiles:
+          - /var/traefik/certs/cloudflare_origin_ca.pem # Path to Cloudflare Origin CA certificate for mTLS
+        clientAuthType: RequireAndVerifyClientCert # Enforce mTLS verification
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: your-email@example.com # <-- Change this to your email
+      storage: /var/traefik/certs/acme.json
+      # caServer: "https://acme-v02.api.letsencrypt.org/directory"
+      dnsChallenge:
+        provider: cloudflare # <-- (Optional) Change this to your DNS provider
+        resolvers:
+          - 1.1.1.1:53
+          - 8.8.8.8:53
+
+providers:
+  docker:
+    exposedByDefault: false # Only containers with traefik.enable=true are exposed.
+  # file:
+  #   directory: /etc/traefik
+  #   watch: true

@@ -1,0 +1,26 @@
+name: myapp_server
+
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: server
+    restart: unless-stopped
+    networks:
+      - internal
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=internal
+      - traefik.http.routers.server.rule=Host(`api.yourdomain.com`)
+      - traefik.http.routers.server.entrypoints=websecure
+      - traefik.http.routers.server.tls.certresolver=letsencrypt
+      - traefik.http.routers.server.tls=true
+      - traefik.http.services.server.loadbalancer.server.port=3000
+    # Do not expose ports directly to the host
+
+networks:
+  internal:
+    name: internal
+    driver: bridge
+    internal: true

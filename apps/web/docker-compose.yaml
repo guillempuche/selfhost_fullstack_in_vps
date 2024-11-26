@@ -1,0 +1,26 @@
+name: myapp_web
+
+services:
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: web
+    restart: unless-stopped
+    networks:
+      - internal
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=internal
+      - traefik.http.routers.web.rule=Host(`yourdomain.com`, `www.yourdomain.com`)
+      - traefik.http.routers.web.entrypoints=websecure
+      - traefik.http.routers.web.tls.certresolver=letsencrypt
+      - traefik.http.routers.web.tls=true
+      - traefik.http.services.web.loadbalancer.server.port=80
+    # Do not expose ports directly to the host
+
+networks:
+  internal:
+    name: internal
+    driver: bridge
+    internal: true
