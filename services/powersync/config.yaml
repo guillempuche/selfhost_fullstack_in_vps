@@ -94,4 +94,4 @@ telemetry:
 # --data-binary "./sync_rules.yaml"
 api:
   tokens:
-    - abcd1234
+    - !env PS_API_TOKEN

@@ -116,7 +116,7 @@ services:
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     healthcheck:
-      test: 'curl -X POST http://localhost:${PS_PORT}/api/admin/v1/diagnostics -H "Authorization: Bearer ${API_TOKEN}" -H "Content-Type: application/json" -H "Accept: application/json" -d "{}" | grep "\"errors\":\[{" && exit 1 || exit 0'
+      test: 'curl -X POST http://localhost:${PS_PORT}/api/admin/v1/diagnostics -H "Authorization: Bearer ${PS_API_TOKEN}" -H "Content-Type: application/json" -H "Accept: application/json" -d "{}" | grep "\"errors\":\[{" && exit 1 || exit 0'
       interval: 5s
       timeout: 1s
       retries: 15
