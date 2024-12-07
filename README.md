@@ -110,3 +110,7 @@ Use cloud or self-hosted. I'm using the cloud (only $5/month).
 5. Deploy the service.
 
 6. Do this for each service (PowerSync, Supertokens, Postgres).
+
+## Todo
+
+- Add Traefik for reverse proxy to Coolify.
