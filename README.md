@@ -99,13 +99,14 @@ Use cloud or self-hosted. I'm using the cloud (only $5/month).
 
    <img src="assets/coolify_resources_2.png" alt="Coolify resources step 2" width="600" />
 
-3. Do this for each service (PowerSync, Supertokens, Postgres).
+3. Check `.env.example` of this repo `Environment Variables` of the resource --> `Production`. Add the missing variables to Coolify.
 
-## [Work in progress]
+4. Create Docker network (found in `docker-compose.yaml` files) in the VPS using SSH terminal. This is to allow the services to communicate with each other.
 
-- Sample Vite web
-- Sample Node.js server
+   ```bash
+   docker network create backend_network
+   ```
 
-Issues:
+5. Deploy the service.
 
-- Coolify doesn't load Docker Compose files.
+6. Do this for each service (PowerSync, Supertokens, Postgres).
