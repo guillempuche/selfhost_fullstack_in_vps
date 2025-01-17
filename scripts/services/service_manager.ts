@@ -199,13 +199,13 @@ if (import.meta.main) {
 	}
 
 	try {
-		try {
-			await manager.startServices(args.length > 0 ? args : undefined)
-		} catch (error) {
-			if (error instanceof Error) {
-				console.error(red('Error:'), error.message)
-			} else {
-				console.error(red('Error:'), error)
-			}
-			Deno.exit(1)
+		await manager.startServices(args.length > 0 ? args : undefined)
+	} catch (error) {
+		if (error instanceof Error) {
+			console.error(red('Error:'), error.message)
+		} else {
+			console.error(red('Error:'), error)
 		}
+		Deno.exit(1)
+	}
+}
