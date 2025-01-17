@@ -1,3 +1,6 @@
 {
+	"deno.enable": false,
+	"deno.enablePaths": ["scripts"],
+	"deno.importMap": "scripts/services/import_map.json",
 	"yaml.customTags": ["!env scalar"]
 }

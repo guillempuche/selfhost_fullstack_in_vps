@@ -44,15 +44,16 @@ replication:
 
 # Connection settings for sync bucket storage
 storage:
-  type: mongodb
-  uri: mongodb://mongo:27017/powersync_demo
+  type: postgresql
+  uri: !env PS_POSTGRES_STORAGE_URI
+  sslmode: disable # 'verify-full' (default) or 'verify-ca' or 'disable'
+
   # use these if authentication is required
   # username: myuser
   # password: mypassword
 
 # The port which the PowerSync API server will listen on
-# port: 8080
-port: 80
+port: !env PS_PORT # Internal port
 
 sync_rules:
   path: /config/sync_rules.yaml
@@ -62,23 +63,23 @@ client_auth:
   # Enable this if using Supabase Auth
   # supabase: true
 
-  # jwks_uri: !env PS_JWKS_URL
+  jwks_uri: !env PS_JWKS_URL
 
   # Optional static collection of public keys for JWT verification
-  jwks:
-    #   keys:
-    #     - kty: 'RSA'
-    #       n: !env PS_JWK_N
-    #       e: !env PS_JWK_E
-    #       alg: 'RS256'
-    #       kid: !env PS_JWK_KID
-    keys:
-      - kty: "oct"
-        k: "thisisonlyforthediagnosticsappandshouldnotbeusedinproduction"
-        alg: "HS256"
+  # jwks:
+  #   #   keys:
+  #   #     - kty: 'RSA'
+  #   #       n: !env PS_JWK_N
+  #   #       e: !env PS_JWK_E
+  #   #       alg: 'RS256'
+  #   #       kid: !env PS_JWK_KID
+  #   keys:
+  #     - kty: "oct"
+  #       k: "thisisonlyforthediagnosticsappandshouldnotbeusedinproduction"
+  #       alg: "HS256"
 
   # JWKS audience
-  audience: ["powersync-dev", "powersync"]
+  audience: [!env PS_SERVER_URL]
 
 # Settings for telemetry reporting
 # See https://docs.powersync.com/self-hosting/telemetry

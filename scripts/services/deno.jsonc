@@ -1,0 +1,10 @@
+{
+	"importMap": "./import_map.json",
+	"tasks": {
+		"docker:clean": "deno run --allow-run --allow-read --allow-env clean_volumes.ts", // "deno task docker:clean", "deno task docker:clean powersync"
+		"docker:down": "deno run --allow-run --allow-read --allow-env stop_services.ts",
+		"docker:restart": "deno run --allow-run --allow-read --allow-env restart_services.ts",
+		"docker:up": "deno run --allow-run --allow-read --allow-env service_manager.ts",
+		"docker:setup_powersync": "deno run --allow-run --allow-read --allow-env setup_powersync.ts"
+	}
+}

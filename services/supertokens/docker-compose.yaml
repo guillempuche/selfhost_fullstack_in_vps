@@ -1,17 +1,19 @@
 # Documentation at https://github.com/supertokens/supertokens-docker-postgresql
+# Supertokens Core versions at
+# - https://supertokens.com/docs/community/compatibility-table
+# - https://registry.supertokens.io/v2/supertokens/supertokens-postgresql/tags/list
 
 name: myapp_supertokens
 
 services:
   db:
-    image: postgres:16.5-alpine3.20
-    container_name: supertokens_db
+    image: 'postgres:17.2-alpine3.21'
     environment:
-      POSTGRES_USER: supertokens_user 
-      POSTGRES_PASSWORD: somePassword 
-      POSTGRES_DB: supertokens
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - ${POSTGRES_PORT}:${POSTGRES_PORT}
+      - 5433:${POSTGRES_PORT}
     networks:
       - supertokens
     restart: always
@@ -24,13 +26,12 @@ services:
       - postgres-data:/var/lib/postgresql/data
 
   auth:
-    image: registry.supertokens.io/supertokens/supertokens-postgresql
-    container_name: supertokens_auth
+    image: registry.supertokens.io/supertokens/supertokens-postgresql:9.3.0
     depends_on:
       db:
         condition: service_healthy
     environment:
-      POSTGRESQL_CONNECTION_URI: postgresql://supertokens_user:somePassword@db:5432/supertokens
+      POSTGRESQL_CONNECTION_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       SUPERTOKENS_PORT: 3567 # Used in Supertokens configuration of the server
       ACCESS_TOKEN_VALIDITY: 3600 # 1 hour
       REFRESH_TOKEN_VALIDITY: 604800 # 7 days

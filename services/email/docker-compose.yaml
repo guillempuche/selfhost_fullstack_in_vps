@@ -8,8 +8,6 @@ services:
       - INBUCKET_SMTP_ADDR=:2500
       - INBUCKET_POP3_ADDR=:1100
       - INBUCKET_STORAGE_PATH=/storage # Where emails are stored
-    env_file:
-      - ../supabase/.env
     ports:
       - 9000:9000 # Web interface
       - 2500:2500 # SMTP service

@@ -5,8 +5,8 @@
 name: myapp_postgres
 
 services:
-  db_postgres:
-    image: postgres:16.5-alpine3.20
+  db:
+    image: postgres:17.2-alpine3.21
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_DB=${POSTGRES_DB}
@@ -17,6 +17,7 @@ services:
     command: ["postgres", "-c", "wal_level=logical"]
     volumes:
       - pg_data:/var/lib/postgresql/data
+      - ./setup_powersync.sql:/docker-entrypoint-initdb.d/setup_powersync.sql # Setup Powersync
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]

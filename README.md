@@ -38,14 +38,62 @@ For Postgres migration, I'm using [Flyway](https://flywaydb.org/).
 
 ## [0. Pre-requisites](#0-pre-requisites)
 
-- Install on your laptop [Docker Desktop](https://www.docker.com/products/docker-desktop/) or other, like [OrbStack](https://orbstack.dev/).
-- Your domain connected to Cloudflare.
+1. [Local] Install on your laptop [Deno](https://deno.land/)
+2. [Local] Install on your laptop [Docker Desktop](https://www.docker.com/products/docker-desktop/) or other, like [OrbStack](https://orbstack.dev/).
+3. [Local] Configure `.env` files for your services (see `services/postgres/.env` for example)
+4. Your domain connected to Cloudflare.
 
 ## [1. Create The Services Locally](#1-create-the-services-locally)
 
-1. Fork my `services` folder to your repository.
-2. Copy the `.env.example` file to `.env` and update the variables.
-3. From each service directory, run `docker compose up` to start the services.
+The local development environment uses Docker Compose to run multiple services. Each service is defined in its own directory under `services/` with its configuration files. The services include:
+
+- **Postgres**: Main database for the application
+- **PowerSync**: Data synchronization service with MongoDB
+- **Supertokens**: Authentication service
+- **Email**: Local email testing with Inbucket
+
+All services are managed through Deno tasks for consistent command execution:
+
+```bash
+# Important: Run all commands from the root directory of the project
+# cd scripts/services
+
+# Start all services
+deno task docker:up
+
+# Start specific services
+deno task docker:up postgres
+deno task docker:up email powersync
+
+# Stop all services
+deno task docker:down
+
+# Restart services
+deno task docker:restart
+
+# Clean volumes
+deno task docker:clean          # Clean all volumes
+deno task docker:clean postgres # Clean specific service volumes
+
+# Setup PowerSync (usually automatic)
+deno task docker:setup_powersync
+```
+
+### Services Structure
+
+Services are defined in `scripts/services/types.ts`:
+
+- `email`
+- `postgres`
+- `powersync`
+- `supertokens`
+
+### Important Notes
+
+1. Services start in a specific order to handle dependencies
+2. When starting `postgres`, PowerSync setup runs automatically
+3. All commands are idempotent - safe to run multiple times
+4. Health checks run automatically to verify service status
 
 ## [2. Setup The VPS](#2-setup-the-vps)
 
@@ -111,6 +159,23 @@ Use cloud or self-hosted. I'm using the cloud (only $5/month).
 
 6. Do this for each service (PowerSync, Supertokens, Postgres).
 
+## Troubleshooting
+
+### Local Development
+
+1. Check Docker logs: `docker logs <container_name>`
+2. Verify environment variables in service `.env` files
+3. Use `deno task docker:down` followed by `deno task docker:up` to reset services
+4. Clean volumes if database issues occur: `deno task docker:clean`
+
+### VPS Deployment
+
+1. Check Coolify logs for deployment issues
+2. Verify network configuration
+3. Ensure all environment variables are set correctly
+4. Check Cloudflare DNS and SSL/TLS settings
+
 ## Todo
 
+- Web and server sample apps.
 - Add Traefik for reverse proxy to Coolify.

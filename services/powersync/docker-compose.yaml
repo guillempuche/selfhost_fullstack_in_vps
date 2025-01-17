@@ -1,34 +1,25 @@
-# Inspired from https://github.com/powersync-ja/self-host-demo/blob/main/services/powersync.yaml
-
 name: myapp_powersync
 
 services:
-  # MongoDB service used internally
-  mongo:
-    image: mongo:7.0
-    container_name: myapp_mongo
-    command: --replSet rs0 --bind_ip_all --quiet
+  postgres_storage:
+    image: postgres:17.2-alpine3.21
+    environment:
+      - POSTGRES_USER=${POWERSYNC_STORAGE_USER}
+      - POSTGRES_PASSWORD=${POWERSYNC_STORAGE_PASSWORD}
+      - POSTGRES_DB=${POWERSYNC_STORAGE_DB}
+      - PGPORT=${POWERSYNC_STORAGE_PORT}
+    volumes:
+      - postgres_storage_data:/var/lib/postgresql/data
     restart: unless-stopped
     ports:
-      - 27017:27017
-    volumes:
-      - mongo_storage:/data/db
+      - ${POWERSYNC_STORAGE_PORT}:${POWERSYNC_STORAGE_PORT}
     networks:
       - backend_network
-
-  # Initializes the MongoDB replica set. This service will not usually be actively running
-  mongo-rs-init:
-    image: mongo:7.0
-    container_name: myapp_mongo_rs_init
-    depends_on:
-      - mongo
-    restart: on-failure
-    entrypoint:
-      - bash
-      - -c
-      - 'mongosh --host mongo:27017 --eval ''try{rs.status().ok && quit(0)} catch {} rs.initiate({_id: "rs0", version: 1, members: [{ _id: 0, host : "mongo:27017" }]})'''
-    networks:
-      - backend_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POWERSYNC_STORAGE_USER} -d ${POWERSYNC_STORAGE_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   powersync:
     image: journeyapps/powersync-service:latest
@@ -49,8 +40,8 @@ services:
     command: ["start", "-r", "unified"]
 
     depends_on:
-      mongo-rs-init:
-        condition: service_completed_successfully
+      postgres_storage:
+        condition: service_healthy
 
     environment:
       # The path (inside the container) to the YAML config file
@@ -74,13 +65,14 @@ services:
       # or e.g.: Via a command line parameter
       #     command: ['start', '-r', 'unified', '-sync64', '[base64 encoded content]']
 
-      PS_MONGO_URI: mongodb://mongo:27017/powersync_demo
-
-      # Used in config.yaml
+      PS_API_TOKEN: ${PS_API_TOKEN}
       PS_DATABASE: ${POSTGRES_DB}
       PS_HOST: ${POSTGRES_HOST}
+      PS_JWKS_URL: ${PS_JWKS_URL}
       PS_PASSWORD: ${POSTGRES_PASSWORD}
       PS_POSTGRES_PORT: ${POSTGRES_PORT}
+      PS_POSTGRES_STORAGE_URI: postgres://${POWERSYNC_STORAGE_USER}:${POWERSYNC_STORAGE_PASSWORD}@postgres_storage:${POWERSYNC_STORAGE_PORT}/${POWERSYNC_STORAGE_DB}
+      PS_SERVER_URL: ${PS_SERVER_URL}
       PS_USER: ${POSTGRES_USER}
 
       # The port which the PowerSync API server should run on
@@ -132,7 +124,7 @@ services:
       - WATCHTOWER_LABEL_ENABLE=true
 
 volumes:
-  mongo_storage:
+  postgres_storage_data:
   pg_data:
 
 networks:
